@@ -1,5 +1,6 @@
 package com.allprocess.ecommerce.entities;
 
+import com.allprocess.ecommerce.enums.EstadoVentaEnum;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -44,8 +45,9 @@ public class VentaENTITY {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal total;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private String estado = "PENDIENTE";
+    private EstadoVentaEnum estado = EstadoVentaEnum.PENDIENTE;
 
     @Column(insertable = false, updatable = false)
     private LocalDateTime fecha;

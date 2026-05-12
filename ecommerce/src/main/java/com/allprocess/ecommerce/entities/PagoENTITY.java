@@ -1,6 +1,7 @@
 package com.allprocess.ecommerce.entities;
 
 import com.allprocess.ecommerce.enums.EstadoPagoEnum;
+import com.allprocess.ecommerce.enums.MetodoPagoEnum;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -27,8 +28,9 @@ public class PagoENTITY {
     @JoinColumn(name = "id_venta", nullable = false)
     private VentaENTITY venta;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "metodo_pago", nullable = false, length = 50)
-    private String metodoPago;
+    private MetodoPagoEnum metodoPago;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal monto;
