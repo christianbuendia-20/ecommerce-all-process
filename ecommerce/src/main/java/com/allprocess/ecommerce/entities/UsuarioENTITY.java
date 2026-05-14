@@ -41,7 +41,7 @@ public class UsuarioENTITY {
     // =======================================================
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_rol", nullable = false)
+    @JoinColumn(name = "id_rol", nullable = false) // Esta será la columna en la tabla usuario
     private RolENTITY rol;
 
     @Column(nullable = false)

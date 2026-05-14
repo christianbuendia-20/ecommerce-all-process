@@ -2,9 +2,10 @@ package com.allprocess.ecommerce.repositories;
 
 import com.allprocess.ecommerce.entities.RolENTITY;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import java.util.Optional;
 
-@Repository
 public interface RolRepository extends JpaRepository<RolENTITY, Integer> {
-    // Aquí no necesitamos métodos extra por ahora.
+
+    // Spring Boot escribirá la consulta SQL automáticamente para buscar por nombre
+    Optional<RolENTITY> findByNombre(String nombre);
 }
