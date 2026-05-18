@@ -8,5 +8,5 @@ import java.util.List;
 @Repository
 public interface VentaDetalleRepository extends JpaRepository<VentaDetalleENTITY, Integer> {
     // Ver los productos de una venta específica
-    List<VentaDetalleENTITY> findByVentaIdVenta(Integer idVenta);
+    List<VentaDetalleENTITY> findByVenta_IdVenta(Integer idVenta);
 }
