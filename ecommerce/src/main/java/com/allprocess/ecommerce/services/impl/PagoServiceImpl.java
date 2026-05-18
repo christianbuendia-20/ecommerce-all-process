@@ -35,7 +35,7 @@ public class PagoServiceImpl implements PagoService {
             throw new BusinessRuleException("Solo se pueden pagar ventas en estado PENDIENTE.");
         }
 
-        venta.setEstado(EstadoVentaEnum.PAGADO);
+        venta.setEstado(EstadoVentaEnum.PAGADA);
         VentaENTITY ventaActualizada = ventaRepository.save(venta);
 
         // <-- 2. Recuperar los detalles de la venta desde la BD

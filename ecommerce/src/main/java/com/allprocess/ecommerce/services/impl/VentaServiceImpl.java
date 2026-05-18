@@ -39,7 +39,7 @@ public class VentaServiceImpl implements VentaService {
     @Transactional
     public ReciboVentaDTO registrarVenta(CheckoutVentaDTO checkoutDTO) {
 
-// 1. CORREGIDO: Usamos getIdCliente() tal como está en tu DTO
+        // 1. CORREGIDO: Usamos getIdCliente() tal como está en tu DTO
         UsuarioENTITY cliente = usuarioRepository.findById(checkoutDTO.getIdCliente())
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado para procesar la venta."));
 

@@ -51,4 +51,5 @@ public class UsuarioENTITY {
     // "No toques esto, deja que MySQL ponga la fecha por defecto (CURRENT_TIMESTAMP)"
     @Column(name = "fecha_registro", insertable = false, updatable = false)
     private LocalDateTime fechaRegistro;
+
 }
