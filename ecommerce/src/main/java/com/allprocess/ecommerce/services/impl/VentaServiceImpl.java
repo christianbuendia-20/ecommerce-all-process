@@ -39,32 +39,34 @@ public class VentaServiceImpl implements VentaService {
     @Transactional
     public ReciboVentaDTO registrarVenta(CheckoutVentaDTO checkoutDTO) {
 
-        UsuarioENTITY cliente = usuarioRepository.findById(checkoutDTO.getIdUsuario())
+// 1. CORREGIDO: Usamos getIdCliente() tal como está en tu DTO
+        UsuarioENTITY cliente = usuarioRepository.findById(checkoutDTO.getIdCliente())
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente no encontrado para procesar la venta."));
 
-        // 1. Crear la cabecera de la Venta
+        // 2. Crear la cabecera de la Venta (Snapshot Inmutable)
         VentaENTITY nuevaVenta = new VentaENTITY();
-        nuevaVenta.setCliente(cliente); // Cambiado a setCliente según tu entidad
+        nuevaVenta.setCliente(cliente);
         nuevaVenta.setEstado(EstadoVentaEnum.PENDIENTE);
 
-        // Mapear los datos de envío inmutables (asumiendo que tu DTO tiene estos getters)
+        // Mapear los datos de envío
         nuevaVenta.setDireccionEnvio(checkoutDTO.getDireccionEnvio());
         nuevaVenta.setCiudadEnvio(checkoutDTO.getCiudadEnvio());
-        nuevaVenta.setReferenciaEnvio(checkoutDTO.getReferenciaEnvio());
 
-        // Asignamos el costo de envío (si viene null, asignamos 0 por seguridad)
-        BigDecimal costoEnvio = checkoutDTO.getCostoEnvio() != null ? checkoutDTO.getCostoEnvio() : BigDecimal.ZERO;
+        // CORREGIDO: Como no pides referencia en el DTO, lo dejamos en null
+        nuevaVenta.setReferenciaEnvio(null);
+
+        // CORREGIDO: Como no mandas costo de envío desde el frontend, lo seteamos a cero
+        BigDecimal costoEnvio = BigDecimal.ZERO;
         nuevaVenta.setCostoEnvio(costoEnvio);
 
-        // Nota: No usamos setFecha() porque tu entidad tiene insertable = false (la BD lo hará sola)
-
+        // Guardamos para generar el id_venta
         VentaENTITY ventaGuardada = ventaRepository.save(nuevaVenta);
 
-        // Inicializamos el total con el costo de envío
+        // Inicializamos el total de la venta sumando el costo de envío inicial
         BigDecimal totalVenta = costoEnvio;
         List<VentaDetalleENTITY> listaDetalles = new ArrayList<>();
 
-        // 2. Recorrer el carrito y validar
+        // 3. Recorrer el carrito, validar stock y crear los detalles
         for (ItemCarritoDTO item : checkoutDTO.getItems()) {
 
             ProductoENTITY producto = productoRepository.findById(item.getIdProducto())
@@ -83,8 +85,7 @@ public class VentaServiceImpl implements VentaService {
             detalle.setProducto(producto);
             detalle.setCantidad(item.getCantidad());
 
-            // Matemáticas con BigDecimal
-            // Asumo que tu ProductoENTITY tiene private BigDecimal precio;
+            // Matemáticas de dinero con BigDecimal
             BigDecimal cantidadBD = BigDecimal.valueOf(item.getCantidad());
             BigDecimal subtotal = producto.getPrecio().multiply(cantidadBD);
 
@@ -92,35 +93,46 @@ public class VentaServiceImpl implements VentaService {
             detalle.setSubtotal(subtotal);
 
             listaDetalles.add(detalle);
-
-            // Sumar al total general
             totalVenta = totalVenta.add(subtotal);
         }
 
+        // 4. Guardar todos los detalles en bloque
         ventaDetalleRepository.saveAll(listaDetalles);
 
-        // 3. Guardar el Total calculado
+        // 5. Actualizar el total general en la cabecera
         ventaGuardada.setTotal(totalVenta);
         ventaRepository.save(ventaGuardada);
 
-        return ventaMapper.toReciboDTO(ventaGuardada);
+        // 6. Traducir pasando la Venta y la lista de Detalles al Mapper
+        return ventaMapper.toReciboDTO(ventaGuardada, listaDetalles);
     }
 
     @Override
     @Transactional(readOnly = true)
     public ReciboVentaDTO obtenerVentaPorId(Integer idVenta) {
+
         VentaENTITY venta = ventaRepository.findById(idVenta)
                 .orElseThrow(() -> new ResourceNotFoundException("No se encontró la venta con el ID: " + idVenta));
-        return ventaMapper.toReciboDTO(venta);
+
+        // Recuperamos los detalles manualmente para el mapper
+        List<VentaDetalleENTITY> detalles = ventaDetalleRepository.findByVenta_IdVenta(idVenta);
+
+        return ventaMapper.toReciboDTO(venta, detalles);
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<ReciboVentaDTO> listarVentasPorUsuario(Integer idUsuario) {
-        // En tu repositorio, el método ahora debe llamarse findByCliente_IdUsuario(Integer idUsuario)
+
+        // Buscamos todas las ventas del cliente
         List<VentaENTITY> ventas = ventaRepository.findByClienteIdUsuario(idUsuario);
+
+        // Mapeamos cada venta buscando sus respectivos detalles
         return ventas.stream()
-                .map(ventaMapper::toReciboDTO)
+                .map(venta -> {
+                    List<VentaDetalleENTITY> detalles = ventaDetalleRepository.findByVenta_IdVenta(venta.getIdVenta());
+                    return ventaMapper.toReciboDTO(venta, detalles);
+                })
                 .collect(Collectors.toList());
     }
 }
