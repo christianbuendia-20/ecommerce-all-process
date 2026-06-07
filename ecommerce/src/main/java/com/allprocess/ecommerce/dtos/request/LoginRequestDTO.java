@@ -14,5 +14,8 @@ public class LoginRequestDTO {
     private String email;
 
     @NotBlank(message = "La contraseña es obligatoria")
-    private String password;
+    private String contrasenia;
+
+    @NotBlank(message = "El rol es obligatorio")
+    private String rol;
 }

@@ -1,0 +1,17 @@
+.git
+.gitignore
+.mvn
+mvnw
+mvnw.cmd
+*.log
+*.md
+.DS_Store
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!target/*.jar
+.idea/
+*.iml
+.vscode/
+.env
+.env.example
+logs/
