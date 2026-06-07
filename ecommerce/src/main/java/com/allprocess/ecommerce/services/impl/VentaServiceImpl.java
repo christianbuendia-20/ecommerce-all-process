@@ -114,7 +114,7 @@ public class VentaServiceImpl implements VentaService {
 
         return ventas.stream()
                 .map(v -> {
-                    List<VentaDetalleENTITY> detalles = ventaDetalleRepository.findByVentaIdVenta(v.getIdVenta());
+                    List<VentaDetalleENTITY> detalles = ventaDetalleRepository.findByVenta_IdVenta(v.getIdVenta());
                     return ventaMapper.toReciboDTO(v, detalles);
                 })
                 .toList();
@@ -127,7 +127,7 @@ public class VentaServiceImpl implements VentaService {
         VentaENTITY venta = ventaRepository.findById(idVenta)
                 .orElseThrow(() -> new ResourceNotFoundException("Venta con ID " + idVenta + " no encontrada"));
 
-        List<VentaDetalleENTITY> detalles = ventaDetalleRepository.findByVentaIdVenta(idVenta);
+        List<VentaDetalleENTITY> detalles = ventaDetalleRepository.findByVenta_IdVenta(idVenta);
         return ventaMapper.toReciboDTO(venta, detalles);
     }
 
