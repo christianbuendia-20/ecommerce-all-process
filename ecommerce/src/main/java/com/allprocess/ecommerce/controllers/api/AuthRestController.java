@@ -1,11 +1,15 @@
 package com.allprocess.ecommerce.controllers.api;
 
+import com.allprocess.ecommerce.dtos.request.ForgotPasswordDTO;
 import com.allprocess.ecommerce.dtos.request.LoginRequestDTO;
 import com.allprocess.ecommerce.dtos.request.RegistroUsuarioDTO;
+import com.allprocess.ecommerce.dtos.request.ResetPasswordDTO;
+import com.allprocess.ecommerce.dtos.request.VerificarEmailDTO;
 import com.allprocess.ecommerce.dtos.response.LoginResponseDTO;
 import com.allprocess.ecommerce.dtos.response.PerfilUsuarioDTO;
 import com.allprocess.ecommerce.security.TokenBlacklistService;
 import com.allprocess.ecommerce.services.AuthService;
+import com.allprocess.ecommerce.services.PasswordResetService;
 import com.allprocess.ecommerce.services.UsuarioService;
 import com.allprocess.ecommerce.services.VerificacionEmailService;
 import jakarta.validation.Valid;
@@ -14,6 +18,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,6 +30,7 @@ public class AuthRestController {
     private final UsuarioService usuarioService;
     private final TokenBlacklistService tokenBlacklistService;
     private final VerificacionEmailService verificacionEmailService;
+    private final PasswordResetService passwordResetService;
 
     @PostMapping("/api/auth/login")
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO loginRequest) {
@@ -39,6 +46,33 @@ public class AuthRestController {
         }
         return ResponseEntity.ok().build();
     }
+
+    // ── Recuperacion de contrasena (3 pasos) ─────────────────────────────────
+
+    @PostMapping("/api/auth/forgot-password")
+    public ResponseEntity<Map<String, String>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordDTO dto) {
+        passwordResetService.solicitarReset(dto.getEmail());
+        return ResponseEntity.ok(Map.of("mensaje",
+                "Codigo de recuperacion enviado al correo registrado."));
+    }
+
+    @PostMapping("/api/auth/verify-reset-code")
+    public ResponseEntity<Map<String, String>> verifyResetCode(
+            @Valid @RequestBody VerificarEmailDTO dto) {
+        passwordResetService.verificarCodigo(dto.getEmail(), dto.getCodigo());
+        return ResponseEntity.ok(Map.of("mensaje", "Codigo valido."));
+    }
+
+    @PostMapping("/api/auth/reset-password")
+    public ResponseEntity<Map<String, String>> resetPassword(
+            @Valid @RequestBody ResetPasswordDTO dto) {
+        passwordResetService.cambiarPassword(dto.getEmail(), dto.getCodigo(), dto.getNuevaPassword());
+        return ResponseEntity.ok(Map.of("mensaje",
+                "Contrasena actualizada correctamente. Ya puedes iniciar sesion."));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
 
     @PostMapping("/api/usuarios/registro")
     public ResponseEntity<PerfilUsuarioDTO> registrar(@Valid @RequestBody RegistroUsuarioDTO registroDTO) {

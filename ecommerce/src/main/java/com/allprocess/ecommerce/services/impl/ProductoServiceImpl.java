@@ -62,6 +62,15 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<ProductoCatalogoDTO> listarTopPorStock() {
+        return productoRepository.findTop8ByActivoTrueOrderByStockDesc()
+                .stream()
+                .map(productoMapper::toCatalogoDTO)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     // Obtiene un producto por ID, lanza 404 si no existe o está inactivo
     public ProductoCatalogoDTO obtenerProductoPorId(Integer idProducto) {
         ProductoENTITY producto = productoRepository.findById(idProducto)

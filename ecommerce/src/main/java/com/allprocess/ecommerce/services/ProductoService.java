@@ -24,6 +24,9 @@ public interface ProductoService {
     // Filtra productos por categoría
     List<ProductoCatalogoDTO> listarPorCategoria(Integer idCategoria);
 
+    // Top 8 productos activos por mayor stock disponible
+    List<ProductoCatalogoDTO> listarTopPorStock();
+
     // Obtiene el detalle de un producto por ID
     ProductoCatalogoDTO obtenerProductoPorId(Integer idProducto);
 

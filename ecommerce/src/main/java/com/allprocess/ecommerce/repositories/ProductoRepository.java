@@ -15,4 +15,7 @@ public interface ProductoRepository extends JpaRepository<ProductoENTITY, Intege
 
     // Filtrar por categoría
     List<ProductoENTITY> findByCategoriaIdCategoriaAndActivoTrue(Integer idCategoria);
+
+    // Top 8 productos activos ordenados por stock descendente
+    List<ProductoENTITY> findTop8ByActivoTrueOrderByStockDesc();
 }

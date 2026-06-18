@@ -25,6 +25,12 @@ public class ProductoController {
         return ResponseEntity.ok(productoService.listarProductosActivos());
     }
 
+    // GET /api/productos/top-stock — Top 8 productos activos con mayor stock
+    @GetMapping("/top-stock")
+    public ResponseEntity<List<ProductoCatalogoDTO>> topPorStock() {
+        return ResponseEntity.ok(productoService.listarTopPorStock());
+    }
+
     // GET /api/productos/buscar?q= — Busca productos por nombre
     @GetMapping("/buscar")
     public ResponseEntity<List<ProductoCatalogoDTO>> buscar(@RequestParam("q") String query) {
