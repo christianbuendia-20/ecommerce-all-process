@@ -1,8 +1,8 @@
 package com.allprocess.ecommerce.services;
 
 import com.allprocess.ecommerce.dtos.request.CheckoutVentaDTO;
+import com.allprocess.ecommerce.dtos.response.AdminVentaListaDTO;
 import com.allprocess.ecommerce.dtos.response.ReciboVentaDTO;
-import com.allprocess.ecommerce.entities.VentaENTITY;
 
 import java.util.List;
 
@@ -21,12 +21,12 @@ public interface VentaService {
     // MÉTODOS DE ADMINISTRACIÓN
     // ==========================================
 
-    // Lista todas las ventas del sistema
-    List<VentaENTITY> listarTodas();
+    // Lista todas las ventas del sistema (con info de cliente y detalles)
+    List<AdminVentaListaDTO> listarTodas();
 
-    // Obtiene el detalle completo de una venta (con pagos incluidos)
-    VentaENTITY obtenerVentaConDetalle(Integer idVenta);
+    // Obtiene el detalle completo de una venta para administración
+    AdminVentaListaDTO obtenerVentaConDetalle(Integer idVenta);
 
     // Actualiza el estado de una venta
-    VentaENTITY actualizarEstado(Integer idVenta, String nuevoEstado);
+    void actualizarEstado(Integer idVenta, String nuevoEstado);
 }

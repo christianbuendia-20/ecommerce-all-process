@@ -1,5 +1,6 @@
 package com.allprocess.ecommerce.services.impl;
 
+import com.allprocess.ecommerce.dtos.response.AdminProductoDTO;
 import com.allprocess.ecommerce.dtos.response.ProductoCatalogoDTO;
 import com.allprocess.ecommerce.entities.CategoriaProductoENTITY;
 import com.allprocess.ecommerce.entities.ProductoENTITY;
@@ -10,10 +11,12 @@ import com.allprocess.ecommerce.mappers.ProductoMapper;
 import com.allprocess.ecommerce.repositories.CategoriaProductoRepository;
 import com.allprocess.ecommerce.repositories.ProductoRepository;
 import com.allprocess.ecommerce.repositories.ProveedorRepository;
+import com.allprocess.ecommerce.services.FileStorageService;
 import com.allprocess.ecommerce.services.ProductoService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -25,6 +28,7 @@ public class ProductoServiceImpl implements ProductoService {
     private final CategoriaProductoRepository categoriaRepository;
     private final ProveedorRepository proveedorRepository;
     private final ProductoMapper productoMapper;
+    private final FileStorageService fileStorageService;
 
     @Override
     @Transactional(readOnly = true)
@@ -72,9 +76,37 @@ public class ProductoServiceImpl implements ProductoService {
 
     @Override
     @Transactional(readOnly = true)
-    // Lista todos los productos (incluyendo inactivos) para el panel de administración
-    public List<ProductoENTITY> listarTodos() {
-        return productoRepository.findAll();
+    // Mapea a DTO dentro de la transacción: las asociaciones LAZY (categoria, proveedor)
+    // se inicializan aquí, evitando LazyInitializationException al serializar con Jackson
+    public List<AdminProductoDTO> listarTodos() {
+        return productoRepository.findAll()
+                .stream()
+                .map(this::toAdminDTO)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public AdminProductoDTO obtenerAdminById(Integer idProducto) {
+        ProductoENTITY producto = productoRepository.findById(idProducto)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto con ID " + idProducto + " no encontrado"));
+        return toAdminDTO(producto);
+    }
+
+    private AdminProductoDTO toAdminDTO(ProductoENTITY p) {
+        return new AdminProductoDTO(
+                p.getIdProducto(),
+                p.getNombre(),
+                p.getDescripcion(),
+                p.getImagenUrl(),
+                p.getPrecio(),
+                p.getStock(),
+                p.getActivo(),
+                p.getCategoria() != null ? p.getCategoria().getIdCategoria() : null,
+                p.getCategoria() != null ? p.getCategoria().getNombre() : "",
+                p.getProveedor() != null ? p.getProveedor().getIdProveedor() : null,
+                p.getProveedor() != null ? p.getProveedor().getNombre() : ""
+        );
     }
 
     @Override
@@ -109,7 +141,9 @@ public class ProductoServiceImpl implements ProductoService {
 
         producto.setNombre(productoActualizado.getNombre());
         producto.setDescripcion(productoActualizado.getDescripcion());
-        producto.setImagenUrl(productoActualizado.getImagenUrl());
+        if (productoActualizado.getImagenUrl() != null) {
+            producto.setImagenUrl(productoActualizado.getImagenUrl());
+        }
         producto.setPrecio(productoActualizado.getPrecio());
         producto.setStock(productoActualizado.getStock());
 
@@ -142,6 +176,47 @@ public class ProductoServiceImpl implements ProductoService {
                 .orElseThrow(() -> new ResourceNotFoundException("Producto con ID " + idProducto + " no encontrado"));
         producto.setActivo(false);
         productoRepository.save(producto);
+    }
+
+    @Override
+    @Transactional
+    // Reactiva un producto previamente desactivado
+    public void activarProducto(Integer idProducto) {
+        ProductoENTITY producto = productoRepository.findById(idProducto)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto con ID " + idProducto + " no encontrado"));
+        producto.setActivo(true);
+        productoRepository.save(producto);
+    }
+
+    @Override
+    @Transactional
+    public ProductoENTITY actualizarImagen(Integer idProducto, MultipartFile file) {
+        ProductoENTITY producto = productoRepository.findById(idProducto)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto con ID " + idProducto + " no encontrado"));
+        if (producto.getImagenUrl() != null) {
+            fileStorageService.deleteFile(extractFilename(producto.getImagenUrl()));
+        }
+        String filename = fileStorageService.storeFile(file);
+        producto.setImagenUrl("/api/productos/imagen/" + filename);
+        return productoRepository.save(producto);
+    }
+
+    @Override
+    @Transactional
+    public void eliminarImagen(Integer idProducto) {
+        ProductoENTITY producto = productoRepository.findById(idProducto)
+                .orElseThrow(() -> new ResourceNotFoundException("Producto con ID " + idProducto + " no encontrado"));
+        if (producto.getImagenUrl() != null) {
+            fileStorageService.deleteFile(extractFilename(producto.getImagenUrl()));
+            producto.setImagenUrl(null);
+            productoRepository.save(producto);
+        }
+    }
+
+    private String extractFilename(String imagenUrl) {
+        if (imagenUrl == null) return null;
+        int i = imagenUrl.lastIndexOf('/');
+        return i >= 0 ? imagenUrl.substring(i + 1) : imagenUrl;
     }
 
     @Override

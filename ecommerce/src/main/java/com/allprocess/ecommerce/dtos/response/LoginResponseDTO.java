@@ -16,4 +16,6 @@ public class LoginResponseDTO {
     private String token;
     private String nombres;
     private String rol;
+    // true cuando el login falla por email no verificado → frontend redirige a /verificar-email
+    private boolean requiresVerification;
 }

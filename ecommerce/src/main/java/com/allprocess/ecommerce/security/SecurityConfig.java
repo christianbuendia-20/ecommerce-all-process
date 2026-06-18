@@ -31,10 +31,17 @@ public class SecurityConfig {
                 .requestMatchers("/homeadmin/**", "/productmanagement/**", "/ordermanagement/**").permitAll()
                 .requestMatchers("/customermanagement/**", "/usermanagement/**", "/adminreports/**").permitAll()
                 .requestMatchers("/homeworker/**", "/profile/**", "/logout").permitAll()
+                .requestMatchers("/verificar-email").permitAll()
 
                 // API pública
                 .requestMatchers("/api/auth/**", "/api/usuarios/registro").permitAll()
+                .requestMatchers("/api/auth/verificar-email", "/api/auth/reenviar-codigo").permitAll()
                 .requestMatchers("/api/productos/**", "/api/categorias/**").permitAll()
+
+                // Mercado Pago: webhook (MP servers) y diagnóstico (dev tool) son públicos
+                .requestMatchers("/api/payments/webhook", "/api/payments/diagnostico").permitAll()
+                // Estado de pago y creación de preferencia requieren autenticación
+                .requestMatchers("/api/payments/**").authenticated()
 
                 // API de cliente (requiere autenticación)
                 .requestMatchers("/api/ventas/**", "/api/direcciones/**", "/api/profile/**").authenticated()

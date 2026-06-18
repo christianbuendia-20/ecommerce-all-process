@@ -35,6 +35,13 @@ public class AuthServiceImpl implements AuthService {
             return errorResponse("Cuenta desactivada. Contacte al administrador.");
         }
 
+        // Bloquear acceso si el correo aún no fue verificado
+        if (usuario.getEmailVerificado() != null && !usuario.getEmailVerificado()) {
+            return new LoginResponseDTO(false, null,
+                    "Debes verificar tu correo electrónico antes de ingresar.",
+                    null, null, null, null, true);
+        }
+
         String rolDb = usuario.getRol().getNombre().toUpperCase();
         String rolForm = loginRequest.getRol().toUpperCase();
 
@@ -62,11 +69,12 @@ public class AuthServiceImpl implements AuthService {
                 "Inicio de sesión exitoso",
                 token,
                 usuario.getNombres(),
-                usuario.getRol().getNombre()
+                usuario.getRol().getNombre(),
+                false
         );
     }
 
     private LoginResponseDTO errorResponse(String mensaje) {
-        return new LoginResponseDTO(false, null, mensaje, null, null, null, null);
+        return new LoginResponseDTO(false, null, mensaje, null, null, null, null, false);
     }
 }

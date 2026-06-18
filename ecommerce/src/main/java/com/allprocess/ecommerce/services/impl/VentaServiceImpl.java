@@ -2,6 +2,8 @@ package com.allprocess.ecommerce.services.impl;
 
 import com.allprocess.ecommerce.dtos.request.CheckoutVentaDTO;
 import com.allprocess.ecommerce.dtos.request.ItemCarritoDTO;
+import com.allprocess.ecommerce.dtos.response.AdminVentaListaDTO;
+import com.allprocess.ecommerce.dtos.response.DetalleReciboDTO;
 import com.allprocess.ecommerce.dtos.response.ReciboVentaDTO;
 import com.allprocess.ecommerce.entities.ProductoENTITY;
 import com.allprocess.ecommerce.entities.UsuarioENTITY;
@@ -36,15 +38,12 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     @Transactional
-    // Procesa el checkout completo: valida stock, descuenta inventario y crea la venta
     public ReciboVentaDTO realizarCheckout(CheckoutVentaDTO checkoutDTO) {
 
-        // 1. Validar que el cliente exista
         UsuarioENTITY cliente = usuarioRepository.findById(checkoutDTO.getIdCliente())
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "Cliente con ID " + checkoutDTO.getIdCliente() + " no encontrado"));
 
-        // 2. Validar stock para cada producto y calcular totales
         BigDecimal total = BigDecimal.ZERO;
         List<VentaDetalleENTITY> detalles = new ArrayList<>();
 
@@ -64,15 +63,12 @@ public class VentaServiceImpl implements VentaService {
                         + ", solicitado: " + item.getCantidad());
             }
 
-            // 3. Descontar stock del producto
             producto.setStock(producto.getStock() - item.getCantidad());
             productoRepository.save(producto);
 
-            // 4. Calcular subtotal del detalle
             BigDecimal subtotal = producto.getPrecio().multiply(BigDecimal.valueOf(item.getCantidad()));
             total = total.add(subtotal);
 
-            // 5. Crear el detalle de la venta
             VentaDetalleENTITY detalle = new VentaDetalleENTITY();
             detalle.setProducto(producto);
             detalle.setCantidad(item.getCantidad());
@@ -82,7 +78,6 @@ public class VentaServiceImpl implements VentaService {
             detalles.add(detalle);
         }
 
-        // 6. Crear la venta (sin costo de envío por ahora, se puede personalizar después)
         VentaENTITY venta = new VentaENTITY();
         venta.setCliente(cliente);
         venta.setDireccionEnvio(checkoutDTO.getDireccionEnvio());
@@ -93,7 +88,6 @@ public class VentaServiceImpl implements VentaService {
         venta.setEstado(EstadoVentaEnum.PENDIENTE);
         venta = ventaRepository.save(venta);
 
-        // 7. Guardar todos los detalles asociados a la venta
         VentaENTITY ventaFinal = venta;
         List<VentaDetalleENTITY> detallesGuardados = detalles.stream()
                 .map(d -> {
@@ -102,13 +96,11 @@ public class VentaServiceImpl implements VentaService {
                 })
                 .toList();
 
-        // 8. Devolver el recibo completo
         return ventaMapper.toReciboDTO(ventaFinal, detallesGuardados);
     }
 
     @Override
     @Transactional(readOnly = true)
-    // Obtiene el historial de compras de un cliente con sus recibos
     public List<ReciboVentaDTO> obtenerHistorialPorCliente(Integer idCliente) {
         List<VentaENTITY> ventas = ventaRepository.findByClienteIdUsuario(idCliente);
 
@@ -122,7 +114,6 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     @Transactional(readOnly = true)
-    // Obtiene el recibo completo de una venta específica
     public ReciboVentaDTO obtenerRecibo(Integer idVenta) {
         VentaENTITY venta = ventaRepository.findById(idVenta)
                 .orElseThrow(() -> new ResourceNotFoundException("Venta con ID " + idVenta + " no encontrada"));
@@ -133,23 +124,25 @@ public class VentaServiceImpl implements VentaService {
 
     @Override
     @Transactional(readOnly = true)
-    // Lista todas las ventas del sistema (para administración)
-    public List<VentaENTITY> listarTodas() {
-        return ventaRepository.findAll();
+    // Mapea a DTO dentro de la transacción para evitar LazyInitializationException al serializar
+    public List<AdminVentaListaDTO> listarTodas() {
+        return ventaRepository.findAll()
+                .stream()
+                .map(this::toAdminDTO)
+                .toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    // Obtiene una venta con toda su información (para administración)
-    public VentaENTITY obtenerVentaConDetalle(Integer idVenta) {
-        return ventaRepository.findById(idVenta)
+    public AdminVentaListaDTO obtenerVentaConDetalle(Integer idVenta) {
+        VentaENTITY venta = ventaRepository.findById(idVenta)
                 .orElseThrow(() -> new ResourceNotFoundException("Venta con ID " + idVenta + " no encontrada"));
+        return toAdminDTO(venta);
     }
 
     @Override
     @Transactional
-    // Actualiza el estado de una venta (ej: PENDIENTE -> PAGADA -> ENVIADA -> ENTREGADA)
-    public VentaENTITY actualizarEstado(Integer idVenta, String nuevoEstado) {
+    public void actualizarEstado(Integer idVenta, String nuevoEstado) {
         VentaENTITY venta = ventaRepository.findById(idVenta)
                 .orElseThrow(() -> new ResourceNotFoundException("Venta con ID " + idVenta + " no encontrada"));
 
@@ -158,9 +151,44 @@ public class VentaServiceImpl implements VentaService {
             venta.setEstado(estado);
         } catch (IllegalArgumentException e) {
             throw new BusinessRuleException("Estado inválido: " + nuevoEstado
-                    + ". Valores permitidos: PENDIENTE, PAGADA, ENVIADA, ENTREGADA, CANCELADA");
+                    + ". Valores permitidos: PENDIENTE, PENDIENTE_PAGO, PAGADA, PAGO_RECHAZADO, PAGO_CANCELADO, EN_PROCESO, ENVIADA, ENTREGADA, CANCELADA");
         }
 
-        return ventaRepository.save(venta);
+        ventaRepository.save(venta);
+    }
+
+    // Convierte VentaENTITY a DTO dentro de la transacción activa (LAZY loading seguro)
+    private AdminVentaListaDTO toAdminDTO(VentaENTITY venta) {
+        UsuarioENTITY cliente = venta.getCliente();
+        String clienteNombre = cliente != null
+                ? (cliente.getNombres() + " " + cliente.getApellidos()).trim()
+                : "Cliente desconocido";
+        String clienteEmail = cliente != null ? cliente.getEmail() : "";
+        Integer idCliente = cliente != null ? cliente.getIdUsuario() : null;
+
+        List<VentaDetalleENTITY> detallesEntidad =
+                ventaDetalleRepository.findByVenta_IdVenta(venta.getIdVenta());
+
+        List<DetalleReciboDTO> detallesDTO = detallesEntidad.stream()
+                .map(d -> {
+                    DetalleReciboDTO dto = new DetalleReciboDTO();
+                    dto.setNombreProducto(d.getProducto() != null ? d.getProducto().getNombre() : "Producto");
+                    dto.setCantidad(d.getCantidad());
+                    dto.setPrecioUnitario(d.getPrecioUnitario());
+                    dto.setSubtotal(d.getSubtotal());
+                    return dto;
+                })
+                .toList();
+
+        return new AdminVentaListaDTO(
+                venta.getIdVenta(),
+                clienteNombre,
+                clienteEmail,
+                idCliente,
+                venta.getFecha(),
+                venta.getEstado() != null ? venta.getEstado().name() : "PENDIENTE",
+                venta.getTotal(),
+                detallesDTO
+        );
     }
 }

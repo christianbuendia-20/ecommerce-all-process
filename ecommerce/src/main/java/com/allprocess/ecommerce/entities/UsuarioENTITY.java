@@ -49,6 +49,10 @@ public class UsuarioENTITY {
     @Column(nullable = false)
     private Boolean activo = true;
 
+    // DEFAULT TRUE: los usuarios existentes en la BD quedan verificados automáticamente
+    @Column(name = "email_verificado", columnDefinition = "BOOLEAN DEFAULT TRUE")
+    private Boolean emailVerificado = false;
+
     // insertable = false y updatable = false le dice a JPA:
     // "No toques esto, deja que MySQL ponga la fecha por defecto (CURRENT_TIMESTAMP)"
     @Column(name = "fecha_registro", insertable = false, updatable = false)

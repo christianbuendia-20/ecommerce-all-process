@@ -1,7 +1,7 @@
 package com.allprocess.ecommerce.controllers.api.admin;
 
+import com.allprocess.ecommerce.dtos.response.AdminVentaListaDTO;
 import com.allprocess.ecommerce.dtos.response.ReciboVentaDTO;
-import com.allprocess.ecommerce.entities.VentaENTITY;
 import com.allprocess.ecommerce.services.VentaService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,15 +17,15 @@ public class AdminVentaController {
 
     private final VentaService ventaService;
 
-    // GET /api/admin/ventas — Lista todas las ventas
+    // GET /api/admin/ventas — Lista todas las ventas con info de cliente y detalles
     @GetMapping
-    public ResponseEntity<List<VentaENTITY>> listarTodas() {
+    public ResponseEntity<List<AdminVentaListaDTO>> listarTodas() {
         return ResponseEntity.ok(ventaService.listarTodas());
     }
 
     // GET /api/admin/ventas/{id} — Obtiene detalle de una venta
     @GetMapping("/{id}")
-    public ResponseEntity<VentaENTITY> obtener(@PathVariable Integer id) {
+    public ResponseEntity<AdminVentaListaDTO> obtener(@PathVariable Integer id) {
         return ResponseEntity.ok(ventaService.obtenerVentaConDetalle(id));
     }
 
@@ -37,9 +37,10 @@ public class AdminVentaController {
 
     // PUT /api/admin/ventas/{id}/estado — Actualiza el estado de una venta
     @PutMapping("/{id}/estado")
-    public ResponseEntity<VentaENTITY> actualizarEstado(
+    public ResponseEntity<Void> actualizarEstado(
             @PathVariable Integer id,
             @RequestBody Map<String, String> body) {
-        return ResponseEntity.ok(ventaService.actualizarEstado(id, body.get("estado")));
+        ventaService.actualizarEstado(id, body.get("estado"));
+        return ResponseEntity.ok().build();
     }
 }

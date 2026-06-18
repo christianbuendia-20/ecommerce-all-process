@@ -1,9 +1,11 @@
 package com.allprocess.ecommerce.services;
 
+import com.allprocess.ecommerce.dtos.response.AdminProductoDTO;
 import com.allprocess.ecommerce.dtos.response.ProductoCatalogoDTO;
 import com.allprocess.ecommerce.entities.CategoriaProductoENTITY;
 import com.allprocess.ecommerce.entities.ProveedorENTITY;
 import com.allprocess.ecommerce.entities.ProductoENTITY;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -29,8 +31,11 @@ public interface ProductoService {
     // MÉTODOS DE ADMINISTRACIÓN
     // ==========================================
 
-    // Lista TODOS los productos (incluyendo inactivos)
-    List<ProductoENTITY> listarTodos();
+    // Lista TODOS los productos (incluyendo inactivos) como DTO para el panel admin
+    List<AdminProductoDTO> listarTodos();
+
+    // Obtiene un producto por ID como DTO para el panel admin
+    AdminProductoDTO obtenerAdminById(Integer idProducto);
 
     // Crea un nuevo producto
     ProductoENTITY crearProducto(ProductoENTITY producto);
@@ -40,6 +45,15 @@ public interface ProductoService {
 
     // Desactiva un producto (borrado lógico)
     void desactivarProducto(Integer idProducto);
+
+    // Reactiva un producto previamente desactivado
+    void activarProducto(Integer idProducto);
+
+    // Sube o reemplaza la imagen de un producto
+    ProductoENTITY actualizarImagen(Integer idProducto, MultipartFile file);
+
+    // Elimina la imagen de un producto
+    void eliminarImagen(Integer idProducto);
 
     // ==========================================
     // CATÁLOGOS AUXILIARES

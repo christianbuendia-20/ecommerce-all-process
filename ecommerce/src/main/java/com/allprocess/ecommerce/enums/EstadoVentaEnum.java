@@ -1,9 +1,13 @@
 package com.allprocess.ecommerce.enums;
 
 public enum EstadoVentaEnum {
-    PENDIENTE,  // El cliente creó la orden pero no ha pagado
-    PAGADA,     // El pago se confirmó, lista para preparar
-    ENVIADA,    // El courier ya la tiene
-    ENTREGADA,  // El cliente la recibió (Fin del flujo feliz)
-    CANCELADA   // El cliente se arrepintió o no pagó a tiempo
+    PENDIENTE,          // Orden creada sin pago (flujo legado)
+    PENDIENTE_PAGO,     // Esperando confirmación de Mercado Pago
+    PAGADA,             // Pago confirmado — lista para preparar
+    PAGO_RECHAZADO,     // Pago rechazado por MP — stock restaurado
+    PAGO_CANCELADO,     // Pago cancelado por el cliente — stock restaurado
+    EN_PROCESO,         // En preparación para envío
+    ENVIADA,            // Entregada al courier
+    ENTREGADA,          // Recibida por el cliente
+    CANCELADA           // Cancelada por administrador
 }

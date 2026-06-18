@@ -3,5 +3,6 @@ package com.allprocess.ecommerce.enums;
 public enum MetodoPagoEnum {
     TARJETA,
     YAPE,
-    TRANSFERENCIA
+    TRANSFERENCIA,
+    MERCADO_PAGO
 }

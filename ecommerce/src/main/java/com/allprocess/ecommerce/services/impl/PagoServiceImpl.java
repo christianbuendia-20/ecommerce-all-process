@@ -40,7 +40,7 @@ public class PagoServiceImpl implements PagoService {
             metodoPago = MetodoPagoEnum.valueOf(pagoDTO.getMetodoPago().toUpperCase());
         } catch (IllegalArgumentException e) {
             throw new BusinessRuleException("Método de pago inválido: " + pagoDTO.getMetodoPago()
-                    + ". Valores: TARJETA, YAPE, TRANSFERENCIA");
+                    + ". Valores: TARJETA, YAPE, TRANSFERENCIA, MERCADO_PAGO");
         }
 
         // 3. Validar que el monto no exceda el total de la venta
