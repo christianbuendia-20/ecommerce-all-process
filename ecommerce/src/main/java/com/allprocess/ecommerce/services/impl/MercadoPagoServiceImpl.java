@@ -19,6 +19,7 @@ import com.mercadopago.client.payment.PaymentClient;
 import com.mercadopago.client.preference.PreferenceBackUrlsRequest;
 import com.mercadopago.client.preference.PreferenceClient;
 import com.mercadopago.client.preference.PreferenceItemRequest;
+import com.mercadopago.client.preference.PreferencePayerRequest;
 import com.mercadopago.client.preference.PreferenceRequest;
 import com.mercadopago.exceptions.MPApiException;
 import com.mercadopago.exceptions.MPException;
@@ -64,8 +65,7 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
         VentaENTITY venta = ventaRepository.findById(idVenta)
                 .orElseThrow(() -> new ResourceNotFoundException("Venta " + idVenta + " no encontrada"));
 
-        if (venta.getEstado() != EstadoVentaEnum.PENDIENTE
-                && venta.getEstado() != EstadoVentaEnum.PENDIENTE_PAGO) {
+        if (venta.getEstado() != EstadoVentaEnum.PENDIENTE_PAGO) {
             throw new BusinessRuleException(
                     "La venta no está en estado válido para pagar. Estado actual: " + venta.getEstado());
         }
@@ -100,32 +100,60 @@ public class MercadoPagoServiceImpl implements MercadoPagoService {
                         .build())
                 .toList();
 
+        // ── Validar URLs antes de construir (falla rápido si el @Value no inyectó) ──
+        if (backUrlSuccess == null || backUrlSuccess.isBlank()) {
+            throw new BusinessRuleException(
+                    "La URL de retorno success está vacía. Verifica 'mercadopago.back-url.success' en application.properties.");
+        }
+
+        // Construir backUrls e inspeccionar el objeto resultante antes de enviarlo a MP
         PreferenceBackUrlsRequest backUrls = PreferenceBackUrlsRequest.builder()
                 .success(backUrlSuccess)
                 .failure(backUrlFailure)
                 .pending(backUrlPending)
                 .build();
 
-        PreferenceRequest.PreferenceRequestBuilder builder = PreferenceRequest.builder()
-                .items(items)
-                .backUrls(backUrls)
-                .autoReturn("approved")
-                .externalReference("VENTA-" + idVenta);
-
-        if (notificationUrl != null && !notificationUrl.isBlank()) {
-            builder.notificationUrl(notificationUrl);
-        }
-
-        // ── Log diagnóstico de lo que se enviará a MP ──────────────────────────
-        log.info("[MP] Creando preferencia — venta={}, ítems={}, total={}, back_success={}",
-                idVenta, items.size(), venta.getTotal(), backUrlSuccess);
+        log.info("[MP] Creando preferencia — venta={}, ítems={}, total={}",
+                idVenta, items.size(), venta.getTotal());
+        log.info("[MP] BackUrls construidas — success='{}', failure='{}', pending='{}'",
+                backUrls.getSuccess(), backUrls.getFailure(), backUrls.getPending());
         items.forEach(i -> log.info("[MP] Ítem: title='{}', qty={}, price={}, currency={}",
                 i.getTitle(), i.getQuantity(), i.getUnitPrice(), i.getCurrencyId()));
-        // ────────────────────────────────────────────────────────────────────────
+
+        // Segunda validación: verificar que el objeto BackUrls tiene el valor correcto
+        if (backUrls.getSuccess() == null || backUrls.getSuccess().isBlank()) {
+            throw new BusinessRuleException(
+                    "PreferenceBackUrlsRequest.success está null después de build(). "
+                    + "backUrlSuccess=" + backUrlSuccess + ". Revisar SDK.");
+        }
+
+        // Email del comprador (cliente autenticado que realizó el checkout)
+        String buyerEmail = (venta.getCliente() != null) ? venta.getCliente().getEmail() : null;
+        log.info("[MP] Payer email para preferencia: {}", buyerEmail);
+
+        // Construir el PreferenceRequest completo
+        // NOTA: autoReturn("approved") requiere URL pública (HTTPS). No funciona con localhost.
+        // Para activarlo en producción: configurar mercadopago.back-url.* con URLs HTTPS reales.
+        PreferenceRequest.PreferenceRequestBuilder reqBuilder = PreferenceRequest.builder()
+                .items(items)
+                .backUrls(backUrls)
+                .externalReference("VENTA-" + idVenta);
+
+        if (buyerEmail != null && !buyerEmail.isBlank()) {
+            reqBuilder.payer(PreferencePayerRequest.builder()
+                    .email(buyerEmail)
+                    .build());
+        }
+
+        if (notificationUrl != null && !notificationUrl.isBlank()) {
+            reqBuilder.notificationUrl(notificationUrl);
+        }
+
+        PreferenceRequest preferenceRequest = reqBuilder.build();
 
         try {
             PreferenceClient client = new PreferenceClient();
-            Preference preference = client.create(builder.build());
+            Preference preference = client.create(preferenceRequest);
 
             log.info("[MP] Preferencia creada OK — id={}, sandboxInitPoint={}",
                     preference.getId(), preference.getSandboxInitPoint());

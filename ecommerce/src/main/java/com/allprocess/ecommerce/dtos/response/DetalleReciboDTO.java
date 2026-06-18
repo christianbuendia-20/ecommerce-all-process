@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 public class DetalleReciboDTO {
 
     private String nombreProducto;
+    private String imagenUrl;
     private Integer cantidad;
     private BigDecimal precioUnitario;
     private BigDecimal subtotal;

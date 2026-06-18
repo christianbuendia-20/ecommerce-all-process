@@ -5,6 +5,7 @@ import com.allprocess.ecommerce.dtos.request.ItemCarritoDTO;
 import com.allprocess.ecommerce.dtos.response.AdminVentaListaDTO;
 import com.allprocess.ecommerce.dtos.response.DetalleReciboDTO;
 import com.allprocess.ecommerce.dtos.response.ReciboVentaDTO;
+import com.allprocess.ecommerce.entities.PagoENTITY;
 import com.allprocess.ecommerce.entities.ProductoENTITY;
 import com.allprocess.ecommerce.entities.UsuarioENTITY;
 import com.allprocess.ecommerce.entities.VentaDetalleENTITY;
@@ -13,6 +14,7 @@ import com.allprocess.ecommerce.enums.EstadoVentaEnum;
 import com.allprocess.ecommerce.exceptions.BusinessRuleException;
 import com.allprocess.ecommerce.exceptions.ResourceNotFoundException;
 import com.allprocess.ecommerce.mappers.VentaMapper;
+import com.allprocess.ecommerce.repositories.PagoRepository;
 import com.allprocess.ecommerce.repositories.ProductoRepository;
 import com.allprocess.ecommerce.repositories.UsuarioRepository;
 import com.allprocess.ecommerce.repositories.VentaDetalleRepository;
@@ -34,6 +36,7 @@ public class VentaServiceImpl implements VentaService {
     private final VentaDetalleRepository ventaDetalleRepository;
     private final ProductoRepository productoRepository;
     private final UsuarioRepository usuarioRepository;
+    private final PagoRepository pagoRepository;
     private final VentaMapper ventaMapper;
 
     @Override
@@ -85,7 +88,7 @@ public class VentaServiceImpl implements VentaService {
         venta.setReferenciaEnvio(null);
         venta.setCostoEnvio(BigDecimal.ZERO);
         venta.setTotal(total);
-        venta.setEstado(EstadoVentaEnum.PENDIENTE);
+        venta.setEstado(EstadoVentaEnum.PENDIENTE_PAGO);
         venta = ventaRepository.save(venta);
 
         VentaENTITY ventaFinal = venta;
@@ -107,7 +110,10 @@ public class VentaServiceImpl implements VentaService {
         return ventas.stream()
                 .map(v -> {
                     List<VentaDetalleENTITY> detalles = ventaDetalleRepository.findByVenta_IdVenta(v.getIdVenta());
-                    return ventaMapper.toReciboDTO(v, detalles);
+                    ReciboVentaDTO dto = ventaMapper.toReciboDTO(v, detalles);
+                    pagoRepository.findFirstByVenta_IdVenta(v.getIdVenta())
+                            .ifPresent(p -> dto.setMetodoPago(p.getMetodoPago().name()));
+                    return dto;
                 })
                 .toList();
     }
@@ -119,7 +125,10 @@ public class VentaServiceImpl implements VentaService {
                 .orElseThrow(() -> new ResourceNotFoundException("Venta con ID " + idVenta + " no encontrada"));
 
         List<VentaDetalleENTITY> detalles = ventaDetalleRepository.findByVenta_IdVenta(idVenta);
-        return ventaMapper.toReciboDTO(venta, detalles);
+        ReciboVentaDTO dto = ventaMapper.toReciboDTO(venta, detalles);
+        pagoRepository.findFirstByVenta_IdVenta(idVenta)
+                .ifPresent(p -> dto.setMetodoPago(p.getMetodoPago().name()));
+        return dto;
     }
 
     @Override

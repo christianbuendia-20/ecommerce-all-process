@@ -13,6 +13,7 @@ public interface VentaMapper {
 
     // 1. Le enseñamos a traducir UN solo detalle de la compra
     @Mapping(source = "producto.nombre", target = "nombreProducto")
+    @Mapping(source = "producto.imagenUrl", target = "imagenUrl")
     DetalleReciboDTO toDetalleDTO(VentaDetalleENTITY detalle);
 
     // 2. MapStruct usará el método de arriba para traducir toda la lista automáticamente

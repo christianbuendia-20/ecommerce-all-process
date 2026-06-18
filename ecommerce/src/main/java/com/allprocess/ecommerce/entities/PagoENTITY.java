@@ -1,5 +1,6 @@
 package com.allprocess.ecommerce.entities;
 
+import com.allprocess.ecommerce.converters.MetodoPagoConverter;
 import com.allprocess.ecommerce.enums.EstadoPagoEnum;
 import com.allprocess.ecommerce.enums.MetodoPagoEnum;
 import jakarta.persistence.*;
@@ -28,7 +29,8 @@ public class PagoENTITY {
     @JoinColumn(name = "id_venta", nullable = false)
     private VentaENTITY venta;
 
-    @Enumerated(EnumType.STRING)
+    // Converter personalizado: maneja valores legacy (TARJETA_CREDITO, TRANSFERENCIA_BANCARIA, PAYPAL)
+    @Convert(converter = MetodoPagoConverter.class)
     @Column(name = "metodo_pago", nullable = false, length = 50)
     private MetodoPagoEnum metodoPago;
 

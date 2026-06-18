@@ -204,10 +204,10 @@ INSERT INTO producto (id_producto, nombre, descripcion, imagen_url, precio, stoc
 
 -- Insertar Ventas (El id_cliente ahora va del 4 al 7)
 INSERT INTO venta (id_venta, id_cliente, direccion_envio, ciudad_envio, referencia_envio, costo_envio, total, estado) VALUES
-(1, 4, 'Av. Los Faisanes 123, Zona Industrial', 'Lima', 'Frente a la fábrica', 50.00, 690.00, 'PROCESANDO'),
+(1, 4, 'Av. Los Faisanes 123, Zona Industrial', 'Lima', 'Frente a la fábrica', 50.00, 690.00, 'EN_PROCESO'),
 (2, 5, 'Av. Argentina 890', 'Callao', 'Portón azul', 15.00, 140.00, 'PENDIENTE'),
-(3, 6, 'Carretera al Norte Km 80', 'Huaral', 'Al lado del grifo', 35.00, 675.00, 'COMPLETADO'),
-(4, 7, 'Av. Evitamiento 1500', 'Lima', 'Parque logístico', 0.00, 850.00, 'EN_CAMINO');
+(3, 6, 'Carretera al Norte Km 80', 'Huaral', 'Al lado del grifo', 35.00, 675.00, 'ENTREGADA'),
+(4, 7, 'Av. Evitamiento 1500', 'Lima', 'Parque logístico', 0.00, 850.00, 'ENVIADA');
 
 -- Insertar Detalles de Venta (Asegurando consistencia matemática)
 -- Venta 1 (Cliente 4): 1 Motor ($550) + 2 Sensores ($90) + Envío ($50) = $690
@@ -231,9 +231,9 @@ INSERT INTO venta_detalle (id_venta, id_producto, cantidad, precio_unitario, sub
 -- 5. PAGOS
 -- ==========================================
 
--- Insertar Pagos
+-- Insertar Pagos (valores alineados con MetodoPagoEnum: TARJETA, YAPE, TRANSFERENCIA, MERCADO_PAGO)
 INSERT INTO pago (id_venta, metodo_pago, monto, estado, transaccion_id) VALUES
-(1, 'TARJETA_CREDITO', 690.00, 'APROBADO', 'TRX-9876543210-VISA'),
-(2, 'TRANSFERENCIA_BANCARIA', 140.00, 'PENDIENTE', NULL),
-(3, 'PAYPAL', 675.00, 'APROBADO', 'PAY-ABC123XYZ'),
-(4, 'TRANSFERENCIA_BANCARIA', 850.00, 'APROBADO', 'OP-BANCARIA-009988');
+(1, 'TARJETA',       690.00, 'APROBADO',  'TRX-9876543210-VISA'),
+(2, 'TRANSFERENCIA', 140.00, 'PENDIENTE', NULL),
+(3, 'TRANSFERENCIA', 675.00, 'APROBADO',  'PAY-ABC123XYZ'),
+(4, 'TRANSFERENCIA', 850.00, 'APROBADO',  'OP-BANCARIA-009988');

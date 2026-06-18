@@ -20,5 +20,7 @@ public class ReciboVentaDTO {
     private BigDecimal costoEnvio;
     private BigDecimal total;
 
+    private String metodoPago;
+
     private List<DetalleReciboDTO> detalles;
 }

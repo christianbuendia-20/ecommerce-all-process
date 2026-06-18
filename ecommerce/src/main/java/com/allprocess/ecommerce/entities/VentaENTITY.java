@@ -1,5 +1,6 @@
 package com.allprocess.ecommerce.entities;
 
+import com.allprocess.ecommerce.converters.EstadoVentaConverter;
 import com.allprocess.ecommerce.enums.EstadoVentaEnum;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -45,7 +46,8 @@ public class VentaENTITY {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal total;
 
-    @Enumerated(EnumType.STRING)
+    // Converter personalizado: maneja valores legacy de la BD (PROCESANDO, EN_CAMINO, COMPLETADO)
+    @Convert(converter = EstadoVentaConverter.class)
     @Column(nullable = false, length = 30)
     private EstadoVentaEnum estado = EstadoVentaEnum.PENDIENTE;
 

@@ -44,6 +44,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/payments/**").authenticated()
 
                 // API de cliente (requiere autenticación)
+                .requestMatchers("/api/ventas/mis-pedidos").authenticated()
                 .requestMatchers("/api/ventas/**", "/api/direcciones/**", "/api/profile/**").authenticated()
                 .requestMatchers("/api/pagos/**").authenticated()
 
